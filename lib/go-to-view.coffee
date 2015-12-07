@@ -1,6 +1,8 @@
 path = require 'path'
 SymbolsView = require './symbols-view'
 TagReader = require './tag-reader'
+{$$} = require 'atom-space-pen-views'
+fuzzaldrin = require 'fuzzaldrin'
 
 module.exports =
 class GoToView extends SymbolsView
@@ -12,6 +14,23 @@ class GoToView extends SymbolsView
 
   detached: ->
     @resolveFindTagPromise?([])
+
+  getFilterKey: -> 'file'
+
+  viewForItem: ({position, name, file, directory}) ->
+    # Style matched characters in search results
+    matches = fuzzaldrin.match(file, @getFilterQuery())
+
+    if atom.project.getPaths().length > 1
+      file = path.join(path.basename(directory), file)
+
+    $$ ->
+      @li class: 'two-lines', =>
+        if position?
+          @div "#{name}:#{position.row + 1}", class: 'primary-line'
+        else
+          @div name, class: 'primary-line'
+        @div class: 'secondary-line', => SymbolsView.highlightMatches(this, file, matches)
 
   findTag: (editor) ->
     @resolveFindTagPromise?([])
